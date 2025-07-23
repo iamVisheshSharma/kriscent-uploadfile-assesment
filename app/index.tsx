@@ -120,9 +120,7 @@ export default function HomeScreen() {
     );
   };
   return (
-    <View style={styles.container}>
-      {error ? <Text style={styles.error}>{error}</Text> : null}
-
+    <View style={[styles.container, { paddingTop: inset.top }]}>
       <FlatList
         data={uploadedFiles}
         renderItem={renderItem}
@@ -140,6 +138,16 @@ export default function HomeScreen() {
               <Text style={styles.emptySubtitle}>
                 Upload some images or PDFs to see them here.
               </Text>
+            </View>
+          );
+        }}
+        ListHeaderComponent={() => {
+          return (
+            <View>
+              <View style={styles.header}>
+                <Text style={styles.headerText}>Upload File</Text>
+              </View>
+              {error ? <Text style={styles.error}>{error}</Text> : null}
             </View>
           );
         }}
@@ -162,12 +170,15 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    marginTop: 40,
-    backgroundColor: "#fff",
+    // marginTop: 40,
+    backgroundColor: "#007bff",
   },
   error: {
-    marginTop: 10,
     color: "red",
+    marginLeft: 10,
+    marginBottom: 4,
+    fontSize: 15,
+    fontWeight: "600",
   },
   infoBox: {
     marginTop: 20,
@@ -225,10 +236,12 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
   },
   list: {
-    padding: 4,
+    flex: 1,
+    backgroundColor: "#fff",
+    // padding: 4,
   },
   item: {
-    width: itemSize - 8,
+    width: itemSize - 4,
     margin: 4,
     backgroundColor: "#f1f1f1",
     borderRadius: 8,
@@ -238,7 +251,7 @@ const styles = StyleSheet.create({
   },
   image: {
     width: "100%",
-    height: itemSize - 20,
+    height: itemSize,
   },
   name: {
     fontSize: 12,
@@ -287,5 +300,16 @@ const styles = StyleSheet.create({
     color: "#888",
     textAlign: "center",
     paddingHorizontal: 20,
+  },
+  header: {
+    backgroundColor: "#007bff",
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    marginBottom: 8,
+  },
+  headerText: {
+    color: "#fff",
+    fontSize: 18,
+    fontWeight: "bold",
   },
 });
