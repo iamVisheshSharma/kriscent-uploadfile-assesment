@@ -1,75 +1,138 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
+import * as DocumentPicker from "expo-document-picker";
+import { useState } from "react";
+import {
+  Alert,
+  Button,
+  Image,
+  Linking,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 
-import { HelloWave } from '@/components/HelloWave';
-import ParallaxScrollView from '@/components/ParallaxScrollView';
-import { ThemedText } from '@/components/ThemedText';
-import { ThemedView } from '@/components/ThemedView';
+const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
+const ALLOWED_TYPES = ["image/png", "image/jpeg", "application/pdf"];
 
 export default function HomeScreen() {
+  const [fileInfo, setFileInfo] =
+    useState<null | DocumentPicker.DocumentPickerAsset>(null);
+  const [error, setError] = useState("");
+  console.log(fileInfo)
+  const pickFile = async () => {
+    setError("");
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        type: ["image/png", "image/jpeg", "application/pdf"],
+        copyToCacheDirectory: false,
+        multiple: false,
+      });
+
+      if (result.canceled) {
+        setError("No file selected.");
+        return;
+      }
+
+      const file = result.assets[0];
+
+      if (
+        !ALLOWED_TYPES.includes(file.mimeType || "") ||
+        file.size == undefined ||
+        file.size > MAX_FILE_SIZE
+      ) {
+        setError("Only PNG/JPG/PDF under 5 MB allowed.");
+        return;
+      }
+      setFileInfo(file);
+      Alert.alert(
+        "File is valid!",
+        `Name: ${file.name}\nSize: ${(file.size / 1024 / 1024).toFixed(2)} MB`
+      );
+    } catch (err) {
+      console.error(err);
+      setError("Something went wrong while picking the file.");
+    }
+  };
+  const openPDF = async () => {
+    if (fileInfo?.uri) {
+      const supported = await Linking.canOpenURL(fileInfo.uri);
+      if (supported) {
+        await Linking.openURL(fileInfo.uri);
+      } else {
+        Alert.alert("Unable to open PDF.");
+      }
+    }
+  };
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12',
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-        <ThemedText>
-          {`Tap the Explore tab to learn more about what's included in this starter app.`}
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          {`When you're ready, run `}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
+    <View style={styles.container}>
+      <Button title="Select File" onPress={pickFile} />
+
+      {error ? <Text style={styles.error}>{error}</Text> : null}
+
+      {fileInfo && (
+        <View style={styles.infoBox}>
+          <Text style={styles.label}>Selected File:</Text>
+          <Text style={styles.infoText}>Name: {fileInfo.name}</Text>
+          {fileInfo.size && <Text >Size: {(fileInfo.size / 1024 / 1024).toFixed(2)} MB</Text>}
+          <Text style={styles.infoText}>Type: {fileInfo.mimeType}</Text>
+          {fileInfo.mimeType?.startsWith("image/") && (
+            <Image
+              source={{ uri: fileInfo.uri }}
+              style={styles.imagePreview}
+              resizeMode="contain"
+            />
+          )}
+          {fileInfo.mimeType === "application/pdf" && (
+            <TouchableOpacity style={styles.openPdfButton} onPress={openPDF}>
+              <Text style={styles.openPdfText}>Open PDF in Browser</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      )}
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  titleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
+  container: {
+    flex: 1,
+    padding: 20,
+    marginTop: 40,
+    backgroundColor: '#fff'
   },
-  stepContainer: {
-    gap: 8,
-    marginBottom: 8,
+  error: {
+    marginTop: 10,
+    color: "red",
   },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
+  infoBox: {
+    marginTop: 20,
+    backgroundColor: "#f1f1f1",
+    padding: 10,
+    borderRadius: 8,
+  },
+  label: {
+    fontWeight: "bold",
+    color: '#0d0d0d'
+  },
+  infoText: {
+    color: '#0d0d0d'
+  },
+  imagePreview: {
+    width: "100%",
+    height: 200,
+    marginTop: 10,
+    borderRadius: 8,
+    backgroundColor: "#ddd",
+  },
+  openPdfButton: {
+    marginTop: 15,
+    backgroundColor: "#007bff",
+    paddingVertical: 10,
+    borderRadius: 6,
+  },
+  openPdfText: {
+    textAlign: "center",
+    color: "#fff",
+    fontWeight: "bold",
   },
 });
